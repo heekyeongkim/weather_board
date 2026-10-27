@@ -44,9 +44,19 @@ function parseKma(json, today) {
   return { tempMax: Math.max(...tmx), windMax: Math.max(...wsd), rainProb: Math.max(...pop) };
 }
 
+// 진단용: 오류 이유를 짧은 글로 알려 줌 (키 · 주소는 절대 포함하지 않음)
+function safeReason(err) {
+  return err && err.safe ? err.message : '호출 실패';
+}
+function safeError(msg) {
+  const e = new Error(msg);
+  e.safe = true;
+  return e;
+}
+
 async function fetchWeather(region, now) {
   const key = process.env.KMA_KEY;
-  if (!key) return null;
+  if (!key) throw safeError('KMA_KEY 환경변수 없음');
   const { nx, ny } = GRIDS[region];
   const base = baseTime(now);
   const serviceKey = key.includes('%') ? key : encodeURIComponent(key);   // 인코딩된 키 · 아닌 키 모두 허용
@@ -54,16 +64,30 @@ async function fetchWeather(region, now) {
     + '&pageNo=1&numOfRows=1000&dataType=JSON'
     + '&base_date=' + base.date + '&base_time=' + base.time + '&nx=' + nx + '&ny=' + ny;
   const res = await fetch(url);
-  if (!res.ok) throw new Error('KMA HTTP ' + res.status);
-  return parseKma(await res.json(), ymd(now));
+  if (!res.ok) throw safeError('기상청 HTTP ' + res.status);
+  const text = await res.text();
+  let json;
+  try {
+    json = JSON.parse(text);
+  } catch (err) {
+    throw safeError('기상청 응답이 JSON 이 아님 (키 종류 · 승인 상태 확인)');
+  }
+  const weather = parseKma(json, ymd(now));
+  if (!weather) {
+    const h = json && json.response && json.response.header;
+    throw safeError('기상청 값 없음' + (h && h.resultMsg ? ' (' + h.resultMsg + ')' : ''));
+  }
+  return weather;
 }
 
 async function fetchTasks(region) {
   const url = process.env.SUPABASE_URL, key = process.env.SUPABASE_ANON_KEY;
-  if (!url || !key) throw new Error('DB 환경변수 없음');
+  if (!url) throw safeError('SUPABASE_URL 환경변수 없음');
+  if (!key) throw safeError('SUPABASE_ANON_KEY 환경변수 없음');
+  if (!/^https:\/\/[^\s'"]+$/.test(url)) throw safeError('SUPABASE_URL 형식 이상 (https:// 로 시작, 공백 · 따옴표 없이)');
   const q = '/rest/v1/wx_tasks?select=title,region,kind,owner&order=id&region=eq.' + encodeURIComponent(region);
-  const res = await fetch(url + q, { headers: { apikey: key } });
-  if (!res.ok) throw new Error('DB HTTP ' + res.status);
+  const res = await fetch(url.replace(/\/+$/, '') + q, { headers: { apikey: key.trim() } });
+  if (!res.ok) throw safeError('DB HTTP ' + res.status);
   return res.json();
 }
 
@@ -88,22 +112,27 @@ module.exports = async function handler(req, res) {
     tasks = await fetchTasks(region);
   } catch (err) {
     res.statusCode = 502;
-    return res.end(JSON.stringify({ error: '일정을 불러오지 못했습니다.' }));
+    res.setHeader('Cache-Control', 'no-store');
+    return res.end(JSON.stringify({ error: '일정을 불러오지 못했습니다.', detail: safeReason(err) }));
   }
 
   // 날씨가 실패해도 일정은 그대로 돌려줌 (판단은 '날씨 확인 전')
   let weather = null;
+  let weatherNote;
   try {
     weather = await fetchWeather(region, now);
   } catch (err) {
     weather = null;
+    weatherNote = safeReason(err);
   }
+  if (weatherNote) res.setHeader('Cache-Control', 'no-store');
 
   res.statusCode = 200;
   res.end(JSON.stringify({
     region,
     date: now.toISOString().slice(0, 10),
     weather,
+    ...(weatherNote ? { weatherNote } : {}),
     tasks: tasks.map((t) => ({ ...t, judge: judge(t.kind, weather || undefined) })),
   }, null, 2));
 };

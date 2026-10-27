@@ -52,6 +52,7 @@
 - 응답(JSON) : `region` · `date` · `weather`(tempMax · windMax · rainProb) · `tasks`(title · region · kind · owner · judge{level, text})
 - 오류 : region 이 없거나 4곳이 아니면 400, GET 이 아니면 405, DB 를 못 읽으면 502.
 - 기상청 호출이 실패해도 일정은 돌려준다 (`weather` 는 null, 판단은 '날씨 확인 전').
+- 실패 이유는 짧은 글로만 알려 준다 : 502 는 `detail`, 날씨 실패는 `weatherNote` (예: 'SUPABASE_ANON_KEY 환경변수 없음'). 키 · 주소 값은 절대 보여 주지 않는다.
 - 키 · 연결 정보는 Vercel 환경변수로만 둔다 : KMA_KEY · SUPABASE_URL · SUPABASE_ANON_KEY. 코드 · GitHub 에 넣지 않는다.
 - 판단은 logic.js 의 judge() 를 그대로 쓴다 (규칙을 한 곳에만 둔다).
 
