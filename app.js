@@ -41,10 +41,6 @@ async function loadTasks() {
   }
 }
 
-function weatherText(w) {
-  return w ? w.tempMax + '℃ · ' + w.windMax + 'm/s · ' + w.rainProb + '%' : '-';
-}
-
 function renderTasks() {
   const body = document.getElementById('taskList');
   body.innerHTML = '';
@@ -109,14 +105,33 @@ async function loadWeather() {
   }
 }
 
-function renderToday() {
+function todayString() {
   const d = new Date();
   const mm = String(d.getMonth() + 1).padStart(2, '0');
   const dd = String(d.getDate()).padStart(2, '0');
-  document.getElementById('todayBox').textContent = d.getFullYear() + '-' + mm + '-' + dd;
+  return d.getFullYear() + '-' + mm + '-' + dd;
+}
+
+function renderToday() {
+  document.getElementById('todayBox').textContent = todayString();
+}
+
+// 지금 표를 마크다운 파일로 내려받기 (현장일정_판단_YYYY-MM-DD.md)
+function downloadMarkdown() {
+  const today = todayString();
+  const text = buildMarkdown(tasks, weatherByRegion, today);
+  const url = URL.createObjectURL(new Blob([text], { type: 'text/markdown;charset=utf-8' }));
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = '현장일정_판단_' + today + '.md';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
 }
 
 document.getElementById('taskForm').addEventListener('submit', addTask);
+document.getElementById('mdBtn').addEventListener('click', downloadMarkdown);
 renderToday();
 loadTasks().then(() => {
   renderTasks();
