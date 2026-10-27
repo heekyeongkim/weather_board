@@ -16,6 +16,7 @@
 - app.js     : 화면 동작 (목록 그리기, 일정 추가)
 - config.js  : 연결 정보 두 줄 (Supabase 주소 · 공개용 anon 키)
 - setup.sql  : Supabase 표 wx_tasks 만들기 (사용자가 SQL Editor 에서 직접 실행)
+- make_db.py : 학습용 SQLite 확인 스크립트 (웹앱과 별개, 파이썬 기본 기능만, tasks.db 는 GitHub 에 올리지 않음)
 - data/tasks.json : 예비 일정 목록 (가상 데이터, DB 연결 실패 시 목록만 표시)
 - PRD.md · CLAUDE.md · README.md : 문서
 
