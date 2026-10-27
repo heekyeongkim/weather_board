@@ -6,6 +6,7 @@
 
 ## 기술 스택 (변경 금지)
 - HTML + CSS + 순수 JavaScript만 사용한다. (React 등 프레임워크, 빌드 도구 사용 금지)
+- 서버 함수는 api/ 폴더의 JavaScript 파일만 허용한다. (Vercel 서버 함수, 빌드 도구 · 프레임워크 금지)
 - 외부 스크립트는 supabase-js 하나만 허용한다. (버전을 고정해 <script> 로 불러온다. 그 밖의 라이브러리 금지)
 - index.html 을 더블클릭해서 열 수 있어야 한다.
 
@@ -14,6 +15,7 @@
 - style.css  : 디자인
 - logic.js   : 판단 규칙만 (화면을 다루는 코드 금지)
 - app.js     : 화면 동작 (목록 그리기, 일정 추가)
+- api/kma.js : 서버 함수 (/api/kma?region=지역 → 일정 · 날씨 · 판단 JSON, logic.js 의 judge 재사용)
 - config.js  : 연결 정보 두 줄 (Supabase 주소 · 공개용 anon 키)
 - setup.sql  : Supabase 표 wx_tasks 만들기 (사용자가 SQL Editor 에서 직접 실행)
 - make_db.py : 학습용 SQLite 확인 스크립트 (웹앱과 별개, 파이썬 기본 기능만, tasks.db 는 GitHub 에 올리지 않음)
@@ -36,3 +38,4 @@
 - 가상 데이터만 사용한다. 실제 이름 · 연락처 · 기관 내부 자료를 넣지 않는다.
 - 사용자가 입력한 글자는 textContent 로 표시한다.
 - 비밀 키는 코드 · 채팅 · GitHub 에 넣지 않는다.
+- KMA_KEY(기상청 키)는 Vercel 환경변수로만 쓰고 process.env 로 읽는다. SUPABASE_URL · SUPABASE_ANON_KEY 도 서버 함수에서는 환경변수로 읽는다.
