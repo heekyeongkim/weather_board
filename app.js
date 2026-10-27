@@ -59,6 +59,24 @@ function addTask(e) {
   renderTasks();
 }
 
+// 03 단원 : 날씨를 받아 표를 다시 그림 (실패해도 목록은 이미 보임)
+async function loadWeather() {
+  const box = document.getElementById('weatherBox');
+  box.textContent = '날씨 불러오는 중…';
+  try {
+    const res = await fetch(buildWeatherUrl());
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const map = parseWeather(await res.json());
+    if (Object.keys(map).length === 0) throw new Error('빈 응답');
+    weatherByRegion = applyTestMode(map, location.search);
+    renderTasks();
+    const testOn = weatherByRegion['세종'] && /test=wind/.test(location.search);
+    box.textContent = '오늘 날씨 반영 완료 (Open-Meteo)' + (testOn ? ' · 시험 모드: 풍속 12 m/s' : '');
+  } catch (err) {
+    box.textContent = '날씨를 불러오지 못했습니다. 일정은 그대로 볼 수 있고, 판단은 "날씨 확인 전"으로 표시됩니다.';
+  }
+}
+
 function renderToday() {
   const d = new Date();
   const mm = String(d.getMonth() + 1).padStart(2, '0');
@@ -70,3 +88,4 @@ document.getElementById('taskForm').addEventListener('submit', addTask);
 renderToday();
 loadTasks();
 renderTasks();
+loadWeather();
